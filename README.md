@@ -11,29 +11,41 @@ and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/developing-packages). 
 -->
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
 
-## Features
+## Características
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+Este paquete de Flutter, extiende la funcionalidad de la clase `http` para redirigir requests cuando no se detecta conectividad celular. Esto permite continuar interactuando con aplicaciones web a pesar de no encontrarse en una zona con cobertura celular o WiFi. 
 
-## Getting started
+Los mensajes de texto presentan limitaciones de largo en su contenido. Si superan los 160 caracteres, el contenido se divide en partes y se envia en mensajes separados. Esto es poco deseable dado al costo que puede representar, el tiempo en enviarse todo el contenido, y la posibilidad de que algun mensaje no llegue a destino. Es por ello que es de sumo interes reducir lo mas posible la cantidad de datos a transmitir. Por esta razón el protocolo ROS aplica varios pasos antes de enviar el mensaje por celular.
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+Se evita usar la representación JSON para el contenido de los requests, dado que al tratarse de texto plano, implica grandes cantidades de caracteres. Por ello se traduce cada request a un protofuf ([Google Protocol Buffers](https://developers.google.com/protocol-buffers)). Este formato codifica cada campo de texto con un numero binario, por lo que reduce en gran medida el tamaño del paquete.  
 
-## Usage
+## Mensajes
+Los mensaje utilizados en el protocolo se definen en [ros-messages](https://github.com/RequestOverSMS/ros-messages).
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+## Funcionamiento
+Al detectar la falta de conectividad a internet, el request HTTP se codifica en un mensaje protofub, para luego ser comprimido con gzip, codificado en base64 para ser enviado por texto plano por SMS, y ademas encriptado.
+
+Este paquete es recibido por el backend de ROS (ver [ros-gateway](https://github.com/RequestOverSMS/ros-gateway)) lugar en el cual se deshacen los pasos anteriormente mencionados. El mensaje se desencripta, se decodifica y se vuelve a formato JSON para realizar el request correspondiente al endpoint indicado.
+
+## Uso
+
+Simplemente se debe importar el cliente ROS en lugar del cliente HTTP convencional. Todo el funcionamiento es completamente transparente. 
 
 ```dart
 const like = 'sample';
+
+var client = ROSClient();
+try {
+  var response = await client.post(
+      Uri.https('example.com', 'whatsit/create'),
+      body: {'name': 'doodle', 'color': 'blue'});
+  var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes)) as Map;
+  var uri = Uri.parse(decodedResponse['uri'] as String);
+  print(await client.get(uri));
+} finally {
+  client.close();
+}
 ```
 
-## Additional information
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
