@@ -10,7 +10,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_sms: ^2.3.2
+  http: ^0.13.4
   protobuf: ^2.0.1
+  connectivity_plus: ^2.0.2
+  sms_advanced: ^1.0.1
 
 dev_dependencies:
   flutter_test:
